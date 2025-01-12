@@ -47,7 +47,11 @@ public class RedditService {
             cachedPosts.add(mapDocumentToPost(doc));
         }
 
-        if(!cachedPosts.isEmpty()) return cachedPosts;
+        if(!cachedPosts.isEmpty()){
+            System.out.println("Data retrieved from MongoDB");  // logged in terminal
+            return cachedPosts;
+
+        }
 
 
         // if posts are not found in database
@@ -76,6 +80,7 @@ public class RedditService {
         for (RedditPost post : fetchedPosts){
             collection.insertOne(mapPostsToDocument(post, username));
         }
+        System.out.println("Data retrieved from Reddit API");   // logged in terminal
         return fetchedPosts;
     }
 
