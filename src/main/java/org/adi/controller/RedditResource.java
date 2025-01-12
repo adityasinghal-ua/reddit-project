@@ -24,6 +24,7 @@ public class RedditResource {
     @ConfigProperty(name = "reddit.client-secret")
     String clientSecret;
 
+//  localhost:8080/user/{username}/posts
     @GET
     @Path("/user/{username}/posts")
     public List<RedditPost> getUserPosts(@PathParam("username") String username) {

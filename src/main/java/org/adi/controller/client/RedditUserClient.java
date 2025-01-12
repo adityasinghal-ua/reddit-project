@@ -5,6 +5,8 @@ import jakarta.ws.rs.core.MediaType;
 import org.adi.models.RedditResponseWrapper;
 import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 
+
+// https://oauth.reddit.com/user/{username}/submitted
 @RegisterRestClient(configKey = "reddit-user")
 public interface RedditUserClient {
     @GET
