@@ -50,4 +50,14 @@ public class RedditPost {
     public void setSubreddit(String subreddit) {
         this.subreddit = subreddit;
     }
+
+    @Override
+    public String toString() {
+        return "RedditPost{" +
+                "title='" + title + '\'' +
+                ", content='" + selftext + '\'' +
+                ", author='" + author + '\'' +
+                '}';
+    }
+
 }

@@ -19,6 +19,8 @@ dependencies {
     implementation 'io.quarkus:quarkus-rest-jackson'
     implementation 'io.quarkus:quarkus-rest-client-jackson'
     implementation("io.quarkus:quarkus-mongodb-client")
+    implementation 'io.quarkus:quarkus-kafka-client'
+    implementation("io.quarkus:quarkus-messaging-kafka")
 }
 
 group 'org.adi'

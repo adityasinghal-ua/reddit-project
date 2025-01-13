@@ -34,6 +34,57 @@ View is not implemented here as backend apis are being exposed
 
 ```
 
+### Code:
+```aiignore
+    private KafkaProducer<String, String> producer;
+```
+Here, <String, String> represents the key, value pair. KafkaProducer is used to send messages to Kafka topics
 
+## Steps to start and stop Kafka
+1. Start kafka and zookeeper
+```aiignore
+brew services start zookeeper
+brew services start kafka
+```
 
+2. Check
+```aiignore
+brew services list
+```
+
+3. Create kafka topic
+```aiignore
+kafka-topics --create --topic reddit-posts --bootstrap-server localhost:9092 --partitions 1 --replication-factor 1
+```
+
+4. View list of created topics
+```aiignore
+kafka-topics --list --bootstrap-server localhost:9092
+```
+
+5. View status of kafka consumer groups
+```aiignore
+kafka-consumer-groups --bootstrap-server localhost:9092 --list
+```
+
+6. Command to send message
+```aiignore
+kafka-console-producer.sh --broker-list localhost:9092 --topic reddit-posts
+```
+
+7. Command to consume message`
+```aiignore
+kafka-console-consumer.sh --bootstrap-server localhost:9092 --topic reddit-posts --from-beginning
+```
+test command
+```
+{"username": "test_user", "title": "Test Post", "selftext": "This is a test post"}
+
+```
+
+8. Stop kafka and zookeeper
+```aiignore
+brew services stop kafka
+brew services stop zookeeper
+```
 
