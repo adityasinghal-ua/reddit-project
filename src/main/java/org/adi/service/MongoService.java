@@ -26,17 +26,6 @@ public class MongoService {
         this.mongoClient = mongoClient;
     }
 
-    @Incoming("reddit-posts")
-    public void consumePost(ConsumerRecord<String , String> record){
-        try{
-            String username = record.key();
-            RedditPost post = new ObjectMapper().readValue(record.value(), RedditPost.class);
-            savePostsToDatabase(post);
-        } catch (Exception e) {
-            e.printStackTrace();
-        }
-    }
-
     public List<RedditPost> getPostsFromDatabase(String username){
         MongoDatabase database = mongoClient.getDatabase(DATABASE_NAME);
         MongoCollection<Document> collection = database.getCollection(COLLECTION_NAME);
@@ -52,9 +41,7 @@ public class MongoService {
     public void savePostsToDatabase(RedditPost post){
         MongoDatabase database = mongoClient.getDatabase(DATABASE_NAME);
         MongoCollection<Document> collection = database.getCollection(COLLECTION_NAME);
-
         collection.insertOne(mapPostsToDocument(post));
-
     }
 
 
