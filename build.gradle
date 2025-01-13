@@ -21,6 +21,9 @@ dependencies {
     implementation("io.quarkus:quarkus-mongodb-client")
     implementation 'io.quarkus:quarkus-kafka-client'
     implementation("io.quarkus:quarkus-messaging-kafka")
+    implementation 'org.opensearch.client:opensearch-rest-client:2.9.0'
+    implementation 'org.opensearch.client:opensearch-java:2.9.0'
+
 }
 
 group 'org.adi'

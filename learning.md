@@ -1,9 +1,12 @@
-# Design pattern:
+## Start Project:
+1. Run Kafka
+2. Run OpenSearch
 
 ## TODO
 1. Figure out a safe way to store client_id and client_secret
 2. Add logic so that token is not generated each time, only when it has expired
 
+# Design pattern:
 ### Model-view Controller
 Classes like RedditPost act as data models, specifying the format in which data is expected and is further handled
 
@@ -28,10 +31,6 @@ View is not implemented here as backend apis are being exposed
 4. @HeaderParam("authorization"): adds a authorization header to the REST client request (like we specify in Postman)
 
 5. @FormParam("grant_type"): specifies form parameter for token-based auth generally
-
-
-
-
 ```
 
 ### Code:
@@ -40,7 +39,9 @@ View is not implemented here as backend apis are being exposed
 ```
 Here, <String, String> represents the key, value pair. KafkaProducer is used to send messages to Kafka topics
 
-## Steps to start and stop Kafka
+## Project setup
+
+### Kafka
 1. Start kafka and zookeeper
 ```aiignore
 brew services start zookeeper
@@ -88,3 +89,24 @@ brew services stop kafka
 brew services stop zookeeper
 ```
 
+### OpenSearch (es)
+1. Start OpenSearch
+```aiignore
+opensearch
+```
+
+### Git commands
+1. Commit with staging
+```aiignore
+git commit -a -m "Commit Message"
+-a => add
+stages all changes first before committing them
+```
+
+2. Remove already tracked files
+```aiignore
+git rm -r -- cached <file_names>
+-r => recursive removal flag remove directories and their contents
+--cached => removes files/folders from Git index while keeping them on local system
+
+```

@@ -4,6 +4,7 @@ import jakarta.inject.Inject;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import org.adi.models.RedditPost;
+import org.adi.service.OpenSearchService;
 import org.adi.service.RedditService;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
@@ -18,16 +19,28 @@ public class RedditResource {
     @Inject
     RedditService redditService;
 
+    @Inject
+    OpenSearchService openSearchService;
+
     @ConfigProperty(name = "reddit.client-id")
     String clientId;
 
     @ConfigProperty(name = "reddit.client-secret")
     String clientSecret;
 
-//  localhost:8080/user/{username}/posts
+    //  Fetch posts
+    //  localhost:8080/user/{username}/posts
     @GET
     @Path("/user/{username}/posts")
     public List<RedditPost> getUserPosts(@PathParam("username") String username) {
         return redditService.getUserPosts(username, clientId, clientSecret);
+    }
+
+    //  Search through indexed posts
+    // localhost:8080/search?query="Query entered here"
+    @GET
+    @Path("/search")
+    public List<RedditPost> searchPosts(@QueryParam("query") String query){
+        return openSearchService.searchPosts(query);
     }
 }
