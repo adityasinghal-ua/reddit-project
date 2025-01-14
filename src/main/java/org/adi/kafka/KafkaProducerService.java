@@ -27,7 +27,7 @@ public class KafkaProducerService {
             if(e != null){
                 e.printStackTrace();
             }else {
-                System.out.println("Message sent to topic: " + metadata.topic() + " partition " + metadata.partition());
+//                System.out.println("Message sent to topic: " + metadata.topic() + " partition " + metadata.partition());
             }
         });
     }

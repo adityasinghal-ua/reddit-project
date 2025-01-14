@@ -40,7 +40,8 @@ public class RedditService {
             // if posts are present in MongoDB
             List<RedditPost> cachedPosts = mongoService.getPostsFromDatabase(username);
 
-            if(!cachedPosts.isEmpty()){
+            // this if condition handles the edge case where we have saved limited posts to MongoDB but more exist in Reddit API
+            if(!cachedPosts.isEmpty() && limit!=null && cachedPosts.size() >= limit){
                 cachedPosts = cachedPosts.stream().limit(limit).collect(Collectors.toList());
                 System.out.println("Data retrieved from MongoDB");  // logged in terminal
                 return cachedPosts;

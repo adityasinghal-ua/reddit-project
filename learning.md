@@ -5,7 +5,8 @@
 ## TODO
 1. Figure out a safe way to store client_id and client_secret
 2. Add logic so that token is not generated each time, only when it has expired
-3. Edge case: If a new user is queried using limit for the first time, limited posts are saved to MongoDB and next time when the username is passed, they are retrieved from MongoDB and the API is not hit. Override MongoDB option  
+~~3. Edge case: If a new user is queried using limit for the first time, limited posts are saved to MongoDB and next time when the username is passed, they are retrieved from MongoDB and the API is not hit. Override MongoDB option~~  
+~~3. Add check to see if limit > posts in MongoDB or if there is no limit, then hit the API~~
 
 # Design pattern:
 ### Model-view Controller
