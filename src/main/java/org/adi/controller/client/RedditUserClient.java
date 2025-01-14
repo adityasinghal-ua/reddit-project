@@ -14,6 +14,7 @@ public interface RedditUserClient {
     @Produces(MediaType.APPLICATION_JSON)
     RedditResponseWrapper getUserPosts(
             @HeaderParam("Authorization") String bearerToken,
-            @PathParam("username") String username
+            @PathParam("username") String username,
+            @QueryParam("limit") Integer limit
     );
 }

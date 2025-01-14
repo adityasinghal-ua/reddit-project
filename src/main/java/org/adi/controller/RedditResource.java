@@ -37,8 +37,12 @@ public class RedditResource {
     //  localhost:8080/user/{username}/posts
     @GET
     @Path("/user/{username}/posts")
-    public List<RedditPost> getUserPosts(@PathParam("username") String username) {
-        return redditService.getUserPosts(username, clientId, clientSecret);
+    public List<RedditPost> getUserPosts(
+            @PathParam("username") String username,
+            @QueryParam("limit") Integer limit
+    ) {
+        if(limit == null) return redditService.getUserPosts(username, clientId, clientSecret, 100);
+        return redditService.getUserPosts(username, clientId, clientSecret, limit);
     }
 
     //  Search through indexed posts

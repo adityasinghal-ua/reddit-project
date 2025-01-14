@@ -37,7 +37,7 @@ public class RedditService {
     @Inject
     KafkaProducerService kafkaProducer;
 
-    public List<RedditPost> getUserPosts(String username, String clientId, String clientSecret){
+    public List<RedditPost> getUserPosts(String username, String clientId, String clientSecret, Integer limit){
 
 
         // if posts are present in MongoDB
@@ -69,7 +69,7 @@ public class RedditService {
         RedditResponseWrapper responseWrapper;
 
         try {
-            responseWrapper = userClient.getUserPosts("Bearer " + accessToken, username);
+            responseWrapper = userClient.getUserPosts("Bearer " + accessToken, username, limit);
             if (responseWrapper == null || responseWrapper.getData() == null || responseWrapper.getData().getChildren().isEmpty()) {
                 throw new NotFoundException("No posts found for user: " + username);
             }
