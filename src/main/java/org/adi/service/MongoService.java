@@ -5,6 +5,7 @@ import com.mongodb.client.AggregateIterable;
 import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
+import com.mongodb.client.model.Filters;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import org.adi.models.RedditPost;
@@ -39,10 +40,20 @@ public class MongoService {
         return posts;
     }
 
-    public void savePostsToDatabase(RedditPost post){
+    public Boolean savePostsToDatabase(RedditPost post){
         MongoDatabase database = mongoClient.getDatabase(DATABASE_NAME);
         MongoCollection<Document> collection = database.getCollection(COLLECTION_NAME);
-        collection.insertOne(mapPostsToDocument(post));
+
+        // find if the same entry already exists
+        Document existingDocument = collection.find(Filters.eq("url", post.getUrl())).first();
+
+        // add only if the document does not already exist
+        if(existingDocument == null){
+            System.out.println("Added to Mongo");
+            collection.insertOne(mapPostsToDocument(post));
+            return false;
+        }
+        return true;    // true when the document already exists
     }
 
 

@@ -27,12 +27,11 @@ public class KafkaConsumerService {
             RedditPost post = objectMapper.readValue(record.value(), RedditPost.class);
 
             // save to MongoDB
-            System.out.println("Added to Mongo");
-            mongoService.savePostsToDatabase(post);
+            Boolean exists = mongoService.savePostsToDatabase(post);
 
             // Index in OpenSearch
-            System.out.println("Added to OpenSearch");
-            openSearchService.indexPost(post);
+            if(!exists)
+                openSearchService.indexPost(post);
 
         } catch (Exception e) {
             e.printStackTrace();

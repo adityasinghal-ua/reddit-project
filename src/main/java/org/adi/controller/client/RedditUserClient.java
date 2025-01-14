@@ -6,7 +6,7 @@ import org.adi.models.RedditResponseWrapper;
 import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 
 
-// https://oauth.reddit.com/user/{username}/submitted
+// https://oauth.reddit.com/user/{username}/submitted?limit={limit}&after={after}
 @RegisterRestClient(configKey = "reddit-user")
 public interface RedditUserClient {
     @GET
@@ -15,6 +15,7 @@ public interface RedditUserClient {
     RedditResponseWrapper getUserPosts(
             @HeaderParam("Authorization") String bearerToken,
             @PathParam("username") String username,
-            @QueryParam("limit") Integer limit
+            @QueryParam("limit") Integer limit,
+            @QueryParam("after") String after
     );
 }

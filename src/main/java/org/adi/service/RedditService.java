@@ -2,9 +2,6 @@ package org.adi.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.mongodb.client.MongoClient;
-import com.mongodb.client.MongoCollection;
-import com.mongodb.client.MongoDatabase;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.NotFoundException;
@@ -69,27 +66,35 @@ public class RedditService {
         }
 
         RedditResponseWrapper responseWrapper;
+        List<RedditPost> fetchedPosts = new ArrayList<RedditPost>();
+        String after = null;
 
         try {
-            responseWrapper = userClient.getUserPosts("Bearer " + accessToken, username, limit);
-            if (responseWrapper == null || responseWrapper.getData() == null || responseWrapper.getData().getChildren().isEmpty()) {
-                throw new NotFoundException("No posts found for user: " + username);
+            // This logic ensures that all posts are fetched from Reddit API by using 'after' parameter to fetch next set of posts until limit is reached or no more posts are available to fetch
+            while((after != null || fetchedPosts.isEmpty()) && fetchedPosts.size() < limit) {
+                responseWrapper = userClient.getUserPosts("Bearer " + accessToken, username, 100, after);
+
+                if (responseWrapper == null || responseWrapper.getData() == null || responseWrapper.getData().getChildren().isEmpty()) {
+                    throw new NotFoundException("No posts found for user: " + username);
+                }
+                fetchedPosts.addAll(responseWrapper.getData()
+                        .getChildren().
+                        stream()
+                        .map(child -> child.getData())
+                        .collect(Collectors.toList()));
+
+                after = responseWrapper.getData().getAfter();
             }
         } catch (Exception e) {
             System.err.println("Failed to fetch posts for username " + username + ": " + e.getMessage());
             throw new RuntimeException("Unable to fetch user posts", e);
         }
 
-        List<RedditPost> fetchedPosts = responseWrapper.getData()
-                .getChildren().
-                stream()
-                .map(child -> child.getData())
-                .collect(Collectors.toList());
 
         System.out.println("Data retrieved from Reddit API");  // logged in terminal
 
 //        fetchedPosts.forEach(post -> System.out.println("Title: " + post.getTitle() + ", content: " + post.getSelftext()));
-
+        fetchedPosts = fetchedPosts.stream().limit(limit).collect(Collectors.toList());
         fetchedPosts.forEach(post -> kafkaProducer.sendMessage("reddit-posts", username, serializePost(post)));
         return fetchedPosts;
 

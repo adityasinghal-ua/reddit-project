@@ -131,6 +131,39 @@ public class RedditResponseWrapper {
 }
      */
 
+    private Data data;
+
+    public Data getData() {
+        return data;
+    }
+
+    public void setData(Data data) {
+        this.data = data;
+    }
+
+
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    public static class Data{
+        private String after;
+
+        public String getAfter() {
+            return after;
+        }
+
+        public void setAfter(String after) {
+            this.after = after;
+        }
+
+        private List<Child> children;
+
+        public List<Child> getChildren() {
+            return children;
+        }
+
+        public void setChildren(List<Child> children) {
+            this.children = children;
+        }
+    }
 
     @JsonIgnoreProperties(ignoreUnknown = true)
     public static class Child{
@@ -143,29 +176,5 @@ public class RedditResponseWrapper {
         public void setData(RedditPost data) {
             this.data = data;
         }
-    }
-
-
-    @JsonIgnoreProperties(ignoreUnknown = true)
-    public static class Data{
-        private List<Child> children;
-
-        public List<Child> getChildren() {
-            return children;
-        }
-
-        public void setChildren(List<Child> children) {
-            this.children = children;
-        }
-    }
-
-    private Data data;
-
-    public Data getData() {
-        return data;
-    }
-
-    public void setData(Data data) {
-        this.data = data;
     }
 }

@@ -5,9 +5,8 @@ import org.adi.models.RedditPost;
 import org.opensearch.client.RestClient;
 import org.opensearch.client.json.jackson.JacksonJsonpMapper;
 import org.opensearch.client.opensearch.OpenSearchClient;
-import org.opensearch.client.opensearch.core.IndexRequest;
-import org.opensearch.client.opensearch.core.SearchRequest;
-import org.opensearch.client.opensearch.core.SearchResponse;
+import org.opensearch.client.opensearch._types.OpenSearchException;
+import org.opensearch.client.opensearch.core.*;
 import org.opensearch.client.transport.rest_client.RestClientTransport;
 
 import java.io.IOException;
@@ -30,6 +29,7 @@ public class OpenSearchService {
                     .id(post.getUrl())              // uses the post URL as unique identifier
                     .document(post)                 // the entire post object is to indexed
                     .build();                       // constructs the index request
+            System.out.println("Added to OpenSearch");
             openSearchClient.index(indexRequest);
         } catch (Exception e) {
             throw new RuntimeException("Failed to index post", e);
