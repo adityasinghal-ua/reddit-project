@@ -4,8 +4,10 @@ import jakarta.inject.Inject;
 import jakarta.ws.rs.*;
 import jakarta.ws.rs.core.MediaType;
 import org.adi.models.RedditPost;
+import org.adi.service.MongoService;
 import org.adi.service.OpenSearchService;
 import org.adi.service.RedditService;
+import org.bson.Document;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import java.util.List;
@@ -21,6 +23,9 @@ public class RedditResource {
 
     @Inject
     OpenSearchService openSearchService;
+
+    @Inject
+    MongoService mongoService;
 
     @ConfigProperty(name = "reddit.client-id")
     String clientId;
@@ -42,5 +47,17 @@ public class RedditResource {
     @Path("/search")
     public List<RedditPost> searchPosts(@QueryParam("query") String query){
         return openSearchService.searchPosts(query);
+    }
+
+
+    // Get top-authors
+    //
+    @GET
+    @Path("/top-authors")
+    public List<Document> getTopAuthors(@QueryParam("limit") Integer limit){
+        if(limit == null){
+            return mongoService.getTopAuthors(10);
+        }
+        return mongoService.getTopAuthors(limit);
     }
 }

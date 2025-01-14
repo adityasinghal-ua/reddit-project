@@ -1,6 +1,7 @@
 package org.adi.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.mongodb.client.AggregateIterable;
 import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
@@ -42,6 +43,34 @@ public class MongoService {
         MongoDatabase database = mongoClient.getDatabase(DATABASE_NAME);
         MongoCollection<Document> collection = database.getCollection(COLLECTION_NAME);
         collection.insertOne(mapPostsToDocument(post));
+    }
+
+
+    public List<Document> getTopAuthors(int limit){
+        MongoDatabase database = mongoClient.getDatabase(DATABASE_NAME);
+        MongoCollection<Document> collection = database.getCollection(COLLECTION_NAME);
+
+        List<Document> pipeline = new ArrayList<>();
+
+        // group documents by author and count posts by each author
+        pipeline.add(new Document("$group", new Document("_id", "$author")
+                .append("postCount", new Document("$sum", 1))));
+
+        // sort authors by post count in descending order
+        pipeline.add(new Document("$sort", new Document("postCount", -1)));
+
+        // limit results to top N authors
+        pipeline.add(new Document("$limit", limit));
+
+        // execute the aggregation
+        AggregateIterable<Document> results = collection.aggregate(pipeline);
+
+        List<Document> topAuthors = new ArrayList<>();
+        for (Document doc : results){
+            topAuthors.add(doc);
+        }
+
+        return topAuthors;
     }
 
 

@@ -86,7 +86,7 @@ public class RedditService {
 
         System.out.println("Data retrieved from Reddit API");  // logged in terminal
 
-        fetchedPosts.forEach(post -> System.out.println("Title: " + post.getTitle() + ", content: " + post.getSelftext()));
+//        fetchedPosts.forEach(post -> System.out.println("Title: " + post.getTitle() + ", content: " + post.getSelftext()));
 
         fetchedPosts.forEach(post -> kafkaProducer.sendMessage("reddit-posts", username, serializePost(post)));
         return fetchedPosts;
