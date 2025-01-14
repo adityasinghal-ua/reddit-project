@@ -39,10 +39,12 @@ public class RedditResource {
     @Path("/user/{username}/posts")
     public List<RedditPost> getUserPosts(
             @PathParam("username") String username,
-            @QueryParam("limit") Integer limit
+            @QueryParam("limit") Integer limit,
+            @QueryParam("forceFetchFromReddit") Integer forceFetch
     ) {
-        if(limit == null) return redditService.getUserPosts(username, clientId, clientSecret, 100);
-        return redditService.getUserPosts(username, clientId, clientSecret, limit);
+        if(forceFetch == null) forceFetch = 0;
+        if(limit == null) return redditService.getUserPosts(username, clientId, clientSecret, 100, forceFetch);
+        return redditService.getUserPosts(username, clientId, clientSecret, limit, forceFetch);
     }
 
     //  Search through indexed posts

@@ -37,15 +37,17 @@ public class RedditService {
     @Inject
     KafkaProducerService kafkaProducer;
 
-    public List<RedditPost> getUserPosts(String username, String clientId, String clientSecret, Integer limit){
+    public List<RedditPost> getUserPosts(String username, String clientId, String clientSecret, Integer limit, Integer forceFetch){
 
+        if(forceFetch == 0){
+            // if posts are present in MongoDB
+            List<RedditPost> cachedPosts = mongoService.getPostsFromDatabase(username);
 
-        // if posts are present in MongoDB
-        List<RedditPost> cachedPosts = mongoService.getPostsFromDatabase(username);
-
-        if(!cachedPosts.isEmpty()){
-            System.out.println("Data retrieved from MongoDB");  // logged in terminal
-            return cachedPosts;
+            if(!cachedPosts.isEmpty()){
+                cachedPosts = cachedPosts.stream().limit(limit).collect(Collectors.toList());
+                System.out.println("Data retrieved from MongoDB");  // logged in terminal
+                return cachedPosts;
+            }
         }
 
         System.out.println("Data not in Mongo");
