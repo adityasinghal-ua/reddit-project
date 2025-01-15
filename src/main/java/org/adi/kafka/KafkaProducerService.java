@@ -11,6 +11,7 @@ import java.util.Properties;
 public class KafkaProducerService {
     private KafkaProducer<String, String> producer;
 
+    // constructor to initialize the KafkaProducer
     public KafkaProducerService(){
         Properties properties = new Properties();
         properties.put("bootstrap.servers", "localhost:9092");      // specifies kafka broker's network location
@@ -22,7 +23,10 @@ public class KafkaProducerService {
     }
 
     public void sendMessage(String topic, String key, String value){
+        // this creates a message that will be sent to a kafka topic
         ProducerRecord<String, String> record = new ProducerRecord<>(topic, key, value);
+
+        // used to send message using the KafkaProducer
         producer.send(record, (metadata, e) -> {
             if(e != null){
                 e.printStackTrace();

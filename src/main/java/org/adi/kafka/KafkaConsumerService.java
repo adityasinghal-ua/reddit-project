@@ -18,12 +18,14 @@ public class KafkaConsumerService {
     @Inject
     OpenSearchService openSearchService;
 
+    // ObjectMapper is a part of Jackson, used to map Java objects to JSON and vice versa
     private ObjectMapper objectMapper = new ObjectMapper();
 
+    // this annotation indicates that this method listens to messages from the "reddit-posts" topic; whenever a message is received, it is passed to this method
     @Incoming("reddit-posts")
     public void consumePost(ConsumerRecord<String,String> record){
         try{
-            String username = record.key();
+            // we are converting the JSON string to RedditPost object using ObjectMapper
             RedditPost post = objectMapper.readValue(record.value(), RedditPost.class);
 
             // save to MongoDB

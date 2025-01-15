@@ -86,6 +86,8 @@ public class MongoService {
 
 
     private Document mapPostsToDocument(RedditPost post) {
+        // we can also use .append() and put it all in 1 line
+
         Document document = new Document();
         document.put("title", post.getTitle());
         document.put("selftext", post.getSelftext());

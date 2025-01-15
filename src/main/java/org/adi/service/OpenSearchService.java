@@ -5,7 +5,6 @@ import org.adi.models.RedditPost;
 import org.opensearch.client.RestClient;
 import org.opensearch.client.json.jackson.JacksonJsonpMapper;
 import org.opensearch.client.opensearch.OpenSearchClient;
-import org.opensearch.client.opensearch._types.OpenSearchException;
 import org.opensearch.client.opensearch.core.*;
 import org.opensearch.client.transport.rest_client.RestClientTransport;
 
@@ -47,7 +46,7 @@ public class OpenSearchService {
                     .build();
             SearchResponse<RedditPost> response = openSearchClient.search(searchRequest, RedditPost.class);
 
-            return response.hits().hits().stream()
+            return response.hits().hits().stream()      //.hits() gives HitsMetadata, .hits().hits() gives the actual list of Hit objects
                     .map(hit -> hit.source())   // extracts source objects from search hits
                     .collect(Collectors.toList());
         } catch (IOException e) {

@@ -35,52 +35,58 @@ public class RedditService {
     KafkaProducerService kafkaProducer;
 
     public List<RedditPost> getUserPosts(String username, String clientId, String clientSecret, Integer limit, Integer forceFetch){
-
-        if(forceFetch == 0){
-            // if posts are present in MongoDB
-            List<RedditPost> cachedPosts = mongoService.getPostsFromDatabase(username);
-
-            // this if condition handles the edge case where we have saved limited posts to MongoDB but more exist in Reddit API
-            if(!cachedPosts.isEmpty() && limit!=null && cachedPosts.size() >= limit){
-                cachedPosts = cachedPosts.stream().limit(limit).collect(Collectors.toList());
-                System.out.println("Data retrieved from MongoDB");  // logged in terminal
-                return cachedPosts;
-            }
+        List<RedditPost> cachedPosts = getCachedPosts(username, limit, forceFetch);
+        if(cachedPosts != null){
+            return cachedPosts;
         }
 
+        String accessToken = getAccessToken(clientId, clientSecret);
+        List<RedditPost> fetchedPosts = fetchPostsFromReddit(username, accessToken, limit);
+
+        fetchedPosts.forEach(post -> kafkaProducer.sendMessage("reddit-posts", username, serializePost(post)));
+        return fetchedPosts;
+    }
+
+    private List<RedditPost> getCachedPosts(String username, Integer limit, Integer forceFetch) {
+        if (forceFetch == 0) {
+            List<RedditPost> cachedPosts = mongoService.getPostsFromDatabase(username);
+            if (!cachedPosts.isEmpty() && limit != null && cachedPosts.size() >= limit) {
+                System.out.println("Data retrieved from MongoDB");
+                return cachedPosts.stream().limit(limit).collect(Collectors.toList());
+            }
+        }
         System.out.println("Data not in Mongo");
+        return null;
+    }
 
-        // if posts are not found in database
-        String basicAuth = "Basic " + Base64.getEncoder()
-                .encodeToString((clientId + ":" + clientSecret).getBytes());
-
+    private String getAccessToken(String clientId, String clientSecret) {
+        String basicAuth = "Basic " + Base64.getEncoder().encodeToString((clientId + ":" + clientSecret).getBytes());
         String tokenResponse = authClient.getAccessToken(basicAuth, "client_credentials");
 
-        String accessToken;
         try{
             ObjectMapper objectMapper = new ObjectMapper();
             JsonNode jsonNode = objectMapper.readTree(tokenResponse);
-            accessToken = jsonNode.get("access_token").asText();
-
+            return jsonNode.get("access_token").asText();
         }catch (Exception e){
             throw new RuntimeException("Failed to get access token", e);
         }
+    }
 
-        RedditResponseWrapper responseWrapper;
-        List<RedditPost> fetchedPosts = new ArrayList<RedditPost>();
+    private List<RedditPost> fetchPostsFromReddit(String username, String accessToken, Integer limit) {
+        List<RedditPost> fetchedPosts = new ArrayList<>();
         String after = null;
 
         try {
-            // This logic ensures that all posts are fetched from Reddit API by using 'after' parameter to fetch next set of posts until limit is reached or no more posts are available to fetch
             while((after != null || fetchedPosts.isEmpty()) && fetchedPosts.size() < limit) {
-                responseWrapper = userClient.getUserPosts("Bearer " + accessToken, username, 100, after);
+
+                // hard coding limit = 100, as allowed values are [1,100]
+                RedditResponseWrapper responseWrapper = userClient.getUserPosts("Bearer " + accessToken, username, 100, after);
 
                 if (responseWrapper == null || responseWrapper.getData() == null || responseWrapper.getData().getChildren().isEmpty()) {
                     throw new NotFoundException("No posts found for user: " + username);
                 }
-                fetchedPosts.addAll(responseWrapper.getData()
-                        .getChildren().
-                        stream()
+
+                fetchedPosts.addAll(responseWrapper.getData().getChildren().stream()
                         .map(child -> child.getData())
                         .collect(Collectors.toList()));
 
@@ -91,28 +97,15 @@ public class RedditService {
             throw new RuntimeException("Unable to fetch user posts", e);
         }
 
-
-        System.out.println("Data retrieved from Reddit API");  // logged in terminal
-
-//        fetchedPosts.forEach(post -> System.out.println("Title: " + post.getTitle() + ", content: " + post.getSelftext()));
-        fetchedPosts = fetchedPosts.stream().limit(limit).collect(Collectors.toList());
-        fetchedPosts.forEach(post -> kafkaProducer.sendMessage("reddit-posts", username, serializePost(post)));
-        return fetchedPosts;
-
+        System.out.println("Data retrieved from Reddit API");
+        return fetchedPosts.stream().limit(limit).collect(Collectors.toList());
     }
 
-    private RedditPost mapDocumentToPost(Document doc) {
-        RedditPost post = new RedditPost();
-        post.setTitle(doc.getString("title"));
-        post.setSelftext(doc.getString("selftext"));
-        post.setUrl(doc.getString("url"));
-        post.setAuthor(doc.getString("author"));
-        post.setSubreddit(doc.getString("subreddit"));
-        return post;
-    }
 
+    // returns a JSON string of the RedditPost object
     private String serializePost(RedditPost post){
         try{
+            System.out.println(new ObjectMapper().writeValueAsString(post));
             return new ObjectMapper().writeValueAsString(post);
         }catch (Exception e){
             throw new RuntimeException("Failed to serialize Reddit Post", e);
