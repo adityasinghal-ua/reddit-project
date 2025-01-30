@@ -1,6 +1,7 @@
 package org.adi.kafka;
 
 import jakarta.enterprise.context.ApplicationScoped;
+import org.adi.config.Constants;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.serialization.StringSerializer;
@@ -14,7 +15,7 @@ public class KafkaProducerService {
     // constructor to initialize the KafkaProducer
     public KafkaProducerService(){
         Properties properties = new Properties();
-        properties.put("bootstrap.servers", "localhost:9092");      // specifies kafka broker's network location
+        properties.put("bootstrap.servers", Constants.KAFKA_BOOTSTRAP_SERVERS);      // specifies kafka broker's network location
         properties.put("key.serializer", StringSerializer.class.getName());     // specifies how key and value should be serialized while converting to Bytes
         properties.put("value.serializer", StringSerializer.class.getName());
         properties.put("acks", "all");    // highest level of message durability and safety, introduces slight latency but ensures integrity (trade-off)

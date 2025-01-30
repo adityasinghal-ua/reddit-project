@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.NotFoundException;
+import org.adi.config.Constants;
 import org.adi.controller.client.RedditAuthClient;
 import org.adi.controller.client.RedditUserClient;
 import org.adi.kafka.KafkaProducerService;
@@ -34,7 +35,7 @@ public class RedditService {
     @Inject
     KafkaProducerService kafkaProducer;
 
-    public List<RedditPost> getUserPosts(String username, String clientId, String clientSecret, Integer limit, Integer forceFetch){
+    public List<RedditPost> getUserPosts(String username, String clientId, String clientSecret, Integer limit, Boolean forceFetch){
         List<RedditPost> cachedPosts = getCachedPosts(username, limit, forceFetch);
         if(cachedPosts != null){
             return cachedPosts;
@@ -43,17 +44,15 @@ public class RedditService {
         String accessToken = getAccessToken(clientId, clientSecret);
         List<RedditPost> fetchedPosts = fetchPostsFromReddit(username, accessToken, limit);
 
-        fetchedPosts.forEach(post -> kafkaProducer.sendMessage("reddit-posts", username, serializePost(post)));
+        fetchedPosts.forEach(post -> kafkaProducer.sendMessage(Constants.REDDIT_TOPIC, username, serializePost(post)));
         return fetchedPosts;
     }
 
-    private List<RedditPost> getCachedPosts(String username, Integer limit, Integer forceFetch) {
-        if (forceFetch == 0) {
-            List<RedditPost> cachedPosts = mongoService.getPostsFromDatabase(username);
-            if (!cachedPosts.isEmpty() && limit != null && cachedPosts.size() >= limit) {
-                System.out.println("Data retrieved from MongoDB");
-                return cachedPosts.stream().limit(limit).collect(Collectors.toList());
-            }
+    private List<RedditPost> getCachedPosts(String username, Integer limit, Boolean forceFetch) {
+        List<RedditPost> cachedPosts = mongoService.getPostsFromDatabase(username);
+        if (!cachedPosts.isEmpty() && limit != null && cachedPosts.size() >= limit) {
+            System.out.println("Data retrieved from MongoDB");
+            return cachedPosts.stream().limit(limit).collect(Collectors.toList());
         }
         System.out.println("Data not in Mongo");
         return null;
@@ -77,7 +76,7 @@ public class RedditService {
         String after = null;
 
         try {
-            while((after != null || fetchedPosts.isEmpty()) && fetchedPosts.size() < limit) {
+            while((after != null || fetchedPosts.isEmpty()) && (limit == null || fetchedPosts.size() < limit)) {
 
                 // hard coding limit = 100, as allowed values are [1,100]
                 RedditResponseWrapper responseWrapper = userClient.getUserPosts("Bearer " + accessToken, username, 100, after);
@@ -98,6 +97,9 @@ public class RedditService {
         }
 
         System.out.println("Data retrieved from Reddit API");
+        if(limit == null){
+            return fetchedPosts;
+        }
         return fetchedPosts.stream().limit(limit).collect(Collectors.toList());
     }
 
@@ -105,6 +107,9 @@ public class RedditService {
     // returns a JSON string of the RedditPost object
     private String serializePost(RedditPost post){
         try{
+
+            // TODO: Try to serialize with annotation (automatic serialization and deserialization)
+
             System.out.println(new ObjectMapper().writeValueAsString(post));
             return new ObjectMapper().writeValueAsString(post);
         }catch (Exception e){

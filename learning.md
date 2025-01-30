@@ -1,12 +1,21 @@
 ## Start Project:
 1. Run Kafka
 2. Run OpenSearch
+3. User with > 100 posts for testing: RadioWolffe
 
 ## TODO
 1. Figure out a safe way to store client_id and client_secret
 2. Add logic so that token is not generated each time, only when it has expired
 ~~3. Edge case: If a new user is queried using limit for the first time, limited posts are saved to MongoDB and next time when the username is passed, they are retrieved from MongoDB and the API is not hit. Override MongoDB option~~  
 ~~3. Add check to see if limit > posts in MongoDB or if there is no limit, then hit the API~~
+3. Change forceFetchFromReddit to boolean
+**4. Incorporate limit = min(limit, 100) line of code
+5. Error handling
+6. Deployment using Docker (learn docker)
+7. Todo notes in comments**
+~~8. To check if post is in MongoDB, compare the URL (not the whole reddit post); comparing strings is a cheaper operation~~
+9. Make 2 separate consumers for MongoDB and OpenSearch to avoid single point of failure (if one fails, the other can still work)
+10. Serialization vs deserialization using annotations (Jackson) [@Bson / @Json]
 
 # Design pattern:
 ### Model-view Controller

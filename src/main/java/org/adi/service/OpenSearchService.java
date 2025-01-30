@@ -1,6 +1,7 @@
 package org.adi.service;
 
 import jakarta.enterprise.context.ApplicationScoped;
+import org.adi.config.Constants;
 import org.adi.models.RedditPost;
 import org.opensearch.client.RestClient;
 import org.opensearch.client.json.jackson.JacksonJsonpMapper;
@@ -24,7 +25,7 @@ public class OpenSearchService {
     public void indexPost(RedditPost post){
         try{
             IndexRequest<RedditPost> indexRequest = new IndexRequest.Builder<RedditPost>()
-                    .index("reddit_posts")    // specifies the index/collection name
+                    .index(Constants.OPENSEARCH_INDEX_NAME)    // specifies the index/collection name
                     .id(post.getUrl())              // uses the post URL as unique identifier
                     .document(post)                 // the entire post object is to indexed
                     .build();                       // constructs the index request
@@ -39,10 +40,31 @@ public class OpenSearchService {
         try{
             // build the search request that is to be passed to the openSearchClient to search
             SearchRequest searchRequest = new SearchRequest.Builder()
-                    .index("reddit_posts")      // target index
+                    .index(Constants.OPENSEARCH_INDEX_NAME)      // target index
                     .query(q -> q.multiMatch(m -> m
                             .fields("title", "selftext", "url", "author", "subreddit")  // multiple search fields
                             .query(query)))             // search query
+                    .build();
+            SearchResponse<RedditPost> response = openSearchClient.search(searchRequest, RedditPost.class);
+
+            return response.hits().hits().stream()      //.hits() gives HitsMetadata, .hits().hits() gives the actual list of Hit objects
+                    .map(hit -> hit.source())   // extracts source objects from search hits
+                    .collect(Collectors.toList());
+        } catch (IOException e) {
+            throw new RuntimeException("Failed to search posts", e);
+        }
+    }
+
+    public List<RedditPost> fuzzySearchPosts(String query){
+        try{
+            // build the search request that is to be passed to the openSearchClient to search
+            SearchRequest searchRequest = new SearchRequest.Builder()
+                    .index(Constants.OPENSEARCH_INDEX_NAME)      // target index
+                    .query(q -> q.multiMatch(m -> m
+                            .fields("title", "selftext", "url", "author", "subreddit")  // multiple search fields
+                            .query(query)
+                            .fuzziness("AUTO")
+                            ))
                     .build();
             SearchResponse<RedditPost> response = openSearchClient.search(searchRequest, RedditPost.class);
 

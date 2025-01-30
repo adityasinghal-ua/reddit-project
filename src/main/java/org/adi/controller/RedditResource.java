@@ -12,6 +12,9 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import java.util.List;
 
+import static java.lang.Math.max;
+import static java.lang.Math.min;
+
 // endpoint for our application (localhost:8080)
 @Path("/reddit")
 @Consumes(MediaType.APPLICATION_JSON)
@@ -34,23 +37,29 @@ public class RedditResource {
     String clientSecret;
 
     //  Fetch posts
-    //  localhost:8080/user/{username}/posts
+    //  localhost:8089/user/{username}/posts
     @GET
     @Path("/user/{username}/posts")
     public List<RedditPost> getUserPosts(
             @PathParam("username") String username,
-            @QueryParam("limit") @DefaultValue("100") Integer limit,
-            @QueryParam("forceFetchFromReddit") @DefaultValue("0") Integer forceFetch   // default value is set if query param is not provided
+            @QueryParam("limit") Integer limit,
+            @QueryParam("forceFetchFromReddit") @DefaultValue("false") Boolean forceFetch   // default value is set if query param is not provided
     ) {
         return redditService.getUserPosts(username, clientId, clientSecret, limit, forceFetch);
     }
 
     //  Search through indexed posts
-    // localhost:8080/search?query="Query entered here"
+    // localhost:8089/search?query="Query entered here"
     @GET
     @Path("/search")
     public List<RedditPost> searchPosts(@QueryParam("query") String query){
         return openSearchService.searchPosts(query);
+    }
+
+    @GET
+    @Path("/fuzzySearch")
+    public List<RedditPost> semanticSearchPosts(@QueryParam("query") String query){
+        return openSearchService.fuzzySearchPosts(query);
     }
 
 
@@ -58,10 +67,13 @@ public class RedditResource {
     //
     @GET
     @Path("/top-authors")
-    public List<Document> getTopAuthors(@QueryParam("limit") Integer limit){
-        if(limit == null){
-            return mongoService.getTopAuthors(10);
-        }
-        return mongoService.getTopAuthors(limit);
+    public List<Document> getTopAuthors(
+            @QueryParam("offset") @DefaultValue("0") Integer offset,
+            @QueryParam("limit") @DefaultValue("10") Integer limit
+    ){
+        offset = max(offset, 0);
+        limit = max(0, limit);
+        limit = min(limit, 100);
+        return mongoService.getTopAuthors(offset, limit);
     }
 }
