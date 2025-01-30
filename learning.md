@@ -8,7 +8,7 @@
 2. Add logic so that token is not generated each time, only when it has expired
 ~~3. Edge case: If a new user is queried using limit for the first time, limited posts are saved to MongoDB and next time when the username is passed, they are retrieved from MongoDB and the API is not hit. Override MongoDB option~~  
 ~~3. Add check to see if limit > posts in MongoDB or if there is no limit, then hit the API~~
-3. Change forceFetchFromReddit to boolean
+~~3. Change forceFetchFromReddit to boolean~~
 **4. Incorporate limit = min(limit, 100) line of code
 5. Error handling
 6. Deployment using Docker (learn docker)
@@ -121,3 +121,10 @@ git rm -r -- cached <file_names>
 --cached => removes files/folders from Git index while keeping them on local system
 
 ```
+
+## Flow of logic
+1. User queries the API with a username and offset, limit
+2. If the limit is not specified, put limit as 100
+3. Check if the user is already in MongoDB
+4. If the user is not in MongoDB, hit the Reddit API and get the posts
+5. 

@@ -18,7 +18,7 @@ public class OpenSearchService {
     private final OpenSearchClient openSearchClient;
 
     public OpenSearchService(){
-        RestClient restClient = RestClient.builder(new org.apache.http.HttpHost("localhost", 9200)).build();
+        RestClient restClient = RestClient.builder(new org.apache.http.HttpHost("localhost", Constants.OPENSEARCH_PORT)).build();
         this.openSearchClient = new OpenSearchClient(new RestClientTransport(restClient, new JacksonJsonpMapper()));
     }
 
@@ -36,7 +36,7 @@ public class OpenSearchService {
         }
     }
 
-    public List<RedditPost> searchPosts(String query){
+    public List<RedditPost> searchPosts(String query, Integer limit, Integer offset){
         try{
             // build the search request that is to be passed to the openSearchClient to search
             SearchRequest searchRequest = new SearchRequest.Builder()
@@ -44,6 +44,8 @@ public class OpenSearchService {
                     .query(q -> q.multiMatch(m -> m
                             .fields("title", "selftext", "url", "author", "subreddit")  // multiple search fields
                             .query(query)))             // search query
+                    .from(offset)
+                    .size(limit)
                     .build();
             SearchResponse<RedditPost> response = openSearchClient.search(searchRequest, RedditPost.class);
 
@@ -55,7 +57,7 @@ public class OpenSearchService {
         }
     }
 
-    public List<RedditPost> fuzzySearchPosts(String query){
+    public List<RedditPost> fuzzySearchPosts(String query, Integer limit, Integer offset){
         try{
             // build the search request that is to be passed to the openSearchClient to search
             SearchRequest searchRequest = new SearchRequest.Builder()
@@ -65,6 +67,8 @@ public class OpenSearchService {
                             .query(query)
                             .fuzziness("AUTO")
                             ))
+                    .from(offset)
+                    .size(limit)
                     .build();
             SearchResponse<RedditPost> response = openSearchClient.search(searchRequest, RedditPost.class);
 

@@ -42,24 +42,36 @@ public class RedditResource {
     @Path("/user/{username}/posts")
     public List<RedditPost> getUserPosts(
             @PathParam("username") String username,
-            @QueryParam("limit") Integer limit,
-            @QueryParam("forceFetchFromReddit") @DefaultValue("false") Boolean forceFetch   // default value is set if query param is not provided
+            @QueryParam("limit") @DefaultValue("100") Integer limit,
+            @QueryParam("offset") @DefaultValue("0") Integer offset
     ) {
-        return redditService.getUserPosts(username, clientId, clientSecret, limit, forceFetch);
+        limit = max(min(limit, 100), 0);
+        return redditService.getUserPosts(username, clientId, clientSecret, limit, offset);
     }
 
     //  Search through indexed posts
     // localhost:8089/search?query="Query entered here"
     @GET
     @Path("/search")
-    public List<RedditPost> searchPosts(@QueryParam("query") String query){
-        return openSearchService.searchPosts(query);
+    public List<RedditPost> searchPosts(
+            @QueryParam("query") String query,
+            @QueryParam("offset") @DefaultValue("0") Integer offset,
+            @QueryParam("limit") @DefaultValue("100") Integer limit
+
+    ){
+        limit = max(min(limit, 100), 0);
+        offset= max(0, offset);
+        return openSearchService.searchPosts(query, limit, offset);
     }
 
     @GET
     @Path("/fuzzySearch")
-    public List<RedditPost> semanticSearchPosts(@QueryParam("query") String query){
-        return openSearchService.fuzzySearchPosts(query);
+    public List<RedditPost> fuzzySearchPosts(
+            @QueryParam("query") String query,
+            @QueryParam("offset") @DefaultValue("0") Integer offset,
+            @QueryParam("limit") @DefaultValue("100") Integer limit
+    ){
+        return openSearchService.fuzzySearchPosts(query, limit, offset);
     }
 
 

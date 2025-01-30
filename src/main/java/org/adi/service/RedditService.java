@@ -35,24 +35,33 @@ public class RedditService {
     @Inject
     KafkaProducerService kafkaProducer;
 
-    public List<RedditPost> getUserPosts(String username, String clientId, String clientSecret, Integer limit, Boolean forceFetch){
-        List<RedditPost> cachedPosts = getCachedPosts(username, limit, forceFetch);
-        if(cachedPosts != null){
-            return cachedPosts;
+    public List<RedditPost> getUserPosts(String username, String clientId, String clientSecret, Integer limit, Integer offset){
+        List<RedditPost> resultPosts = new ArrayList<>();
+        List<RedditPost> cachedPosts = getCachedPosts(username, limit, offset);
+        if(cachedPosts != null && !cachedPosts.isEmpty()){
+            resultPosts.addAll(cachedPosts);
+
+            if(resultPosts.size() == limit){
+                return resultPosts;
+            }
+
+            limit -= resultPosts.size();
+            offset += resultPosts.size();
         }
 
         String accessToken = getAccessToken(clientId, clientSecret);
-        List<RedditPost> fetchedPosts = fetchPostsFromReddit(username, accessToken, limit);
+        List<RedditPost> fetchedPosts = fetchPostsFromReddit(username, accessToken, limit, offset);
 
         fetchedPosts.forEach(post -> kafkaProducer.sendMessage(Constants.REDDIT_TOPIC, username, serializePost(post)));
-        return fetchedPosts;
+        resultPosts.addAll(fetchedPosts);
+        return resultPosts;
     }
 
-    private List<RedditPost> getCachedPosts(String username, Integer limit, Boolean forceFetch) {
-        List<RedditPost> cachedPosts = mongoService.getPostsFromDatabase(username);
-        if (!cachedPosts.isEmpty() && limit != null && cachedPosts.size() >= limit) {
+    private List<RedditPost> getCachedPosts(String username, Integer limit, Integer offset) {
+        List<RedditPost> cachedPosts = mongoService.getPostsFromDatabase(username, limit, offset);
+        if (cachedPosts.size() == limit) {
             System.out.println("Data retrieved from MongoDB");
-            return cachedPosts.stream().limit(limit).collect(Collectors.toList());
+            return cachedPosts;
         }
         System.out.println("Data not in Mongo");
         return null;
@@ -71,14 +80,13 @@ public class RedditService {
         }
     }
 
-    private List<RedditPost> fetchPostsFromReddit(String username, String accessToken, Integer limit) {
+    private List<RedditPost> fetchPostsFromReddit(String username, String accessToken, Integer limit, Integer offset) {
         List<RedditPost> fetchedPosts = new ArrayList<>();
         String after = null;
 
         try {
-            while((after != null || fetchedPosts.isEmpty()) && (limit == null || fetchedPosts.size() < limit)) {
+            while((after != null || fetchedPosts.isEmpty()) && fetchedPosts.size() < limit+offset) {
 
-                // hard coding limit = 100, as allowed values are [1,100]
                 RedditResponseWrapper responseWrapper = userClient.getUserPosts("Bearer " + accessToken, username, 100, after);
 
                 if (responseWrapper == null || responseWrapper.getData() == null || responseWrapper.getData().getChildren().isEmpty()) {
@@ -97,10 +105,8 @@ public class RedditService {
         }
 
         System.out.println("Data retrieved from Reddit API");
-        if(limit == null){
-            return fetchedPosts;
-        }
-        return fetchedPosts.stream().limit(limit).collect(Collectors.toList());
+
+        return fetchedPosts.stream().skip(offset).limit(limit).collect(Collectors.toList());
     }
 
 

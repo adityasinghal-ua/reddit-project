@@ -29,12 +29,15 @@ public class MongoService {
         this.mongoClient = mongoClient;
     }
 
-    public List<RedditPost> getPostsFromDatabase(String username){
+    public List<RedditPost> getPostsFromDatabase(String username, int limit, int offset){
         MongoDatabase database = mongoClient.getDatabase(DATABASE_NAME);
         MongoCollection<Document> collection = database.getCollection(COLLECTION_NAME);
 
         List<RedditPost> posts = new ArrayList<>();
-        for(Document doc : collection.find(new Document("author", username))){
+        for(Document doc : collection.find(new Document("author", username))
+                .skip(offset)
+                .limit(limit)
+        ){
             posts.add(mapDocumentToPost(doc));
         }
 
