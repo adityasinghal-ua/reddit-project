@@ -46,7 +46,12 @@ public class RedditResource {
             @QueryParam("offset") @DefaultValue("0") Integer offset
     ) {
         limit = max(min(limit, 100), 0);
-        return redditService.getUserPosts(username, clientId, clientSecret, limit, offset);
+        try {
+            return redditService.getUserPosts(username, clientId, clientSecret, limit, offset)
+                    .get();  // get() blocks until complete, makes async call sync
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
     //  Search through indexed posts
