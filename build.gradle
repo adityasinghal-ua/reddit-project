@@ -23,6 +23,7 @@ dependencies {
     implementation("io.quarkus:quarkus-messaging-kafka")
     implementation 'org.opensearch.client:opensearch-rest-client:2.9.0'
     implementation 'org.opensearch.client:opensearch-java:2.9.0'
+    implementation 'redis.clients:jedis:4.3.1'
 
 }
 

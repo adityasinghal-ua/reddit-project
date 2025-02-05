@@ -37,6 +37,14 @@ public class RedditService {
     @Inject
     KafkaProducerService kafkaProducer;
 
+    @Inject
+    RedisService redisService;
+
+
+//       1) Check Redis
+//       2) If missing, check DB
+//       3) If still missing, fetch from Reddit, store in DB (via Kafka), and store in Redis
+
     public CompletableFuture<List<RedditPost>> getUserPosts(
             String username,
             String clientId,
@@ -44,48 +52,44 @@ public class RedditService {
             Integer limit,
             Integer offset
     ) {
-        // made placeholders because you cannot reassign the value of a variable in a lambda
-        final int[] limitHolder = { limit };
-        final int[] offsetHolder = { offset };
+        //  Check Redis cache
+        String cacheKey = redisService.buildRedisKey(username, limit, offset);
+        List<RedditPost> fromRedis = redisService.getPostsFromCache(cacheKey);
+        if (fromRedis != null && !fromRedis.isEmpty()) {
+            System.out.println("Data retrieved from Redis cache");
+            return CompletableFuture.completedFuture(fromRedis);
+        }
 
-        return getCachedPosts(username, limitHolder[0], offsetHolder[0])
-                .thenCompose(cachedPosts -> {
-                    // If enough posts in cache, return them
-                    if (cachedPosts != null && !cachedPosts.isEmpty() && cachedPosts.size() == limitHolder[0]) {
-                        System.out.println("Data retrieved from MongoDB");
-                        return CompletableFuture.completedFuture(cachedPosts);
-                    }
-
-                    List<RedditPost> resultPosts = new ArrayList<>();
-                    if (cachedPosts != null) {
-                        resultPosts.addAll(cachedPosts);
-                        // Modify the array contents
-                        limitHolder[0] -= cachedPosts.size();
-                        offsetHolder[0] += cachedPosts.size();
-                    }
-                    // Now fetch from Reddit
-                    return getAccessToken(clientId, clientSecret).thenCompose(accessToken ->
-                            fetchPostsFromReddit(username, accessToken, limitHolder[0], offsetHolder[0])
-                    ).thenApply(fetchedPosts -> {
-                        // Publish new posts to Kafka
-                        fetchedPosts.forEach(post ->
-                                kafkaProducer.sendMessage(Constants.REDDIT_TOPIC, username, serializePost(post))
-                        );
-                        resultPosts.addAll(fetchedPosts);
-                        return resultPosts;
-                    });
-                });
-    }
-
-
-    private CompletableFuture<List<RedditPost>> getCachedPosts(String username, Integer limit, Integer offset) {
+        // If not in Redis, check Mongo
         return CompletableFuture.supplyAsync(() -> {
-            List<RedditPost> posts = mongoService.getPostsFromDatabase(username, limit, offset);
-            if (posts != null && !posts.isEmpty()) {
-                return posts;
+            List<RedditPost> fromMongo = mongoService.getPostsFromDatabase(username, limit, offset);
+            return fromMongo;
+        }).thenCompose(posts -> {
+            if (posts != null && !posts.isEmpty() && posts.size() == limit) {
+                System.out.println("Data retrieved from MongoDB");
+
+                // Cache these posts in Redis for next time
+                redisService.setPostsToCache(cacheKey, posts, 600);
+
+                return CompletableFuture.completedFuture(posts);
             } else {
-                System.out.println("Data not in Mongo");
-                return null;
+
+                // If not in Mongo, fetch from Reddit
+                return getAccessToken(clientId, clientSecret)
+                        .thenCompose(accessToken -> fetchPostsFromReddit(username, accessToken, limit, offset))
+                        .thenApply(fetchedPosts -> {
+                            System.out.println("Data retrieved from Reddit API");
+
+                            // Publish new posts to Kafka -> send to MongoDB and OpenSearch
+                            fetchedPosts.forEach(post ->
+                                    kafkaProducer.sendMessage(Constants.REDDIT_TOPIC, username, serializePost(post))
+                            );
+
+                            // Cache in Redis
+                            redisService.setPostsToCache(cacheKey, fetchedPosts, 3600);
+
+                            return fetchedPosts;
+                        });
             }
         });
     }
@@ -94,11 +98,10 @@ public class RedditService {
     private CompletableFuture<String> getAccessToken(String clientId, String clientSecret) {
         return CompletableFuture.supplyAsync(() -> {
             try {
-                String basicAuth = "Basic " + Base64.getEncoder().encodeToString((clientId + ":" + clientSecret).getBytes());
+                String basicAuth = "Basic " + Base64.getEncoder()
+                        .encodeToString((clientId + ":" + clientSecret).getBytes());
                 String tokenResponse = authClient.getAccessToken(basicAuth, "client_credentials");
-                // parse the JSON to extract "access_token"
-                ObjectMapper objectMapper = new ObjectMapper();
-                JsonNode jsonNode = objectMapper.readTree(tokenResponse);
+                JsonNode jsonNode = new ObjectMapper().readTree(tokenResponse);
                 return jsonNode.get("access_token").asText();
             } catch (Exception e) {
                 throw new RuntimeException("Failed to get access token", e);
@@ -135,7 +138,7 @@ public class RedditService {
     }
 
 
-    private String serializePost(RedditPost post){
+    private String serializePost(RedditPost post) {
         try {
             return new ObjectMapper().writeValueAsString(post);
         } catch (Exception e) {
