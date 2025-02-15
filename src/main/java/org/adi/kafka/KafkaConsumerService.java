@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import org.adi.config.Constants;
 import org.adi.models.RedditPost;
 import org.adi.service.MongoService;
 import org.adi.service.OpenSearchService;
@@ -18,12 +19,19 @@ public class KafkaConsumerService {
     @Inject
     OpenSearchService openSearchService;
 
+    // ObjectMapper is a part of Jackson, used to map Java objects to JSON and vice versa
     private ObjectMapper objectMapper = new ObjectMapper();
 
-    @Incoming("reddit-posts")
+    // this annotation indicates that this method listens to messages from the "reddit-posts" topic; whenever a message is received, it is passed to this method
+
+
+    @Incoming(Constants.REDDIT_TOPIC)
     public void consumePost(ConsumerRecord<String,String> record){
         try{
-            String username = record.key();
+            // we are converting the JSON string to RedditPost object using ObjectMapper
+
+            //
+
             RedditPost post = objectMapper.readValue(record.value(), RedditPost.class);
 
             // save to MongoDB

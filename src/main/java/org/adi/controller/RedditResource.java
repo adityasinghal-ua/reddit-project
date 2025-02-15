@@ -12,6 +12,9 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import java.util.List;
 
+import static java.lang.Math.max;
+import static java.lang.Math.min;
+
 // endpoint for our application (localhost:8080)
 @Path("/reddit")
 @Consumes(MediaType.APPLICATION_JSON)
@@ -34,25 +37,46 @@ public class RedditResource {
     String clientSecret;
 
     //  Fetch posts
-    //  localhost:8080/user/{username}/posts
+    //  localhost:8089/user/{username}/posts
     @GET
     @Path("/user/{username}/posts")
     public List<RedditPost> getUserPosts(
             @PathParam("username") String username,
-            @QueryParam("limit") Integer limit,
-            @QueryParam("forceFetchFromReddit") Integer forceFetch
+            @QueryParam("limit") @DefaultValue("100") Integer limit,
+            @QueryParam("offset") @DefaultValue("0") Integer offset
     ) {
-        if(forceFetch == null) forceFetch = 0;
-        if(limit == null) return redditService.getUserPosts(username, clientId, clientSecret, 100, forceFetch);
-        return redditService.getUserPosts(username, clientId, clientSecret, limit, forceFetch);
+        limit = max(min(limit, 100), 0);
+        try {
+            return redditService.getUserPosts(username, clientId, clientSecret, limit, offset)
+                    .get();  // get() blocks until complete, makes async call sync
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
     }
 
     //  Search through indexed posts
-    // localhost:8080/search?query="Query entered here"
+    // localhost:8089/search?query="Query entered here"
     @GET
     @Path("/search")
-    public List<RedditPost> searchPosts(@QueryParam("query") String query){
-        return openSearchService.searchPosts(query);
+    public List<RedditPost> searchPosts(
+            @QueryParam("query") String query,
+            @QueryParam("offset") @DefaultValue("0") Integer offset,
+            @QueryParam("limit") @DefaultValue("100") Integer limit
+
+    ){
+        limit = max(min(limit, 100), 0);
+        offset= max(0, offset);
+        return openSearchService.searchPosts(query, limit, offset);
+    }
+
+    @GET
+    @Path("/fuzzySearch")
+    public List<RedditPost> fuzzySearchPosts(
+            @QueryParam("query") String query,
+            @QueryParam("offset") @DefaultValue("0") Integer offset,
+            @QueryParam("limit") @DefaultValue("100") Integer limit
+    ){
+        return openSearchService.fuzzySearchPosts(query, limit, offset);
     }
 
 
@@ -60,10 +84,13 @@ public class RedditResource {
     //
     @GET
     @Path("/top-authors")
-    public List<Document> getTopAuthors(@QueryParam("limit") Integer limit){
-        if(limit == null){
-            return mongoService.getTopAuthors(10);
-        }
-        return mongoService.getTopAuthors(limit);
+    public List<Document> getTopAuthors(
+            @QueryParam("offset") @DefaultValue("0") Integer offset,
+            @QueryParam("limit") @DefaultValue("10") Integer limit
+    ){
+        offset = max(offset, 0);
+        limit = max(0, limit);
+        limit = min(limit, 100);
+        return mongoService.getTopAuthors(offset, limit);
     }
 }

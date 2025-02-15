@@ -8,6 +8,7 @@ import com.mongodb.client.MongoDatabase;
 import com.mongodb.client.model.Filters;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
+import org.adi.config.Constants;
 import org.adi.models.RedditPost;
 import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.bson.Document;
@@ -28,12 +29,15 @@ public class MongoService {
         this.mongoClient = mongoClient;
     }
 
-    public List<RedditPost> getPostsFromDatabase(String username){
+    public List<RedditPost> getPostsFromDatabase(String username, int limit, int offset){
         MongoDatabase database = mongoClient.getDatabase(DATABASE_NAME);
         MongoCollection<Document> collection = database.getCollection(COLLECTION_NAME);
 
         List<RedditPost> posts = new ArrayList<>();
-        for(Document doc : collection.find(new Document("author", username))){
+        for(Document doc : collection.find(new Document("author", username))
+                .skip(offset)
+                .limit(limit)
+        ){
             posts.add(mapDocumentToPost(doc));
         }
 
@@ -44,7 +48,7 @@ public class MongoService {
         MongoDatabase database = mongoClient.getDatabase(DATABASE_NAME);
         MongoCollection<Document> collection = database.getCollection(COLLECTION_NAME);
 
-        // find if the same entry already exists
+        // find if the same entry already exists in the database (using URL as it is unique)
         Document existingDocument = collection.find(Filters.eq("url", post.getUrl())).first();
 
         // add only if the document does not already exist
@@ -57,7 +61,10 @@ public class MongoService {
     }
 
 
-    public List<Document> getTopAuthors(int limit){
+    // TODO: offset and limit for pagination (to ensure we don't fetch all posts at once in high load situations)
+    // teams get knowledge entity
+
+    public List<Document> getTopAuthors(int offset, int limit){
         MongoDatabase database = mongoClient.getDatabase(DATABASE_NAME);
         MongoCollection<Document> collection = database.getCollection(COLLECTION_NAME);
 
@@ -65,10 +72,13 @@ public class MongoService {
 
         // group documents by author and count posts by each author
         pipeline.add(new Document("$group", new Document("_id", "$author")
-                .append("postCount", new Document("$sum", 1))));
+                .append(Constants.TOP_AUTHORS_COLUMN, new Document("$sum", 1))));
 
         // sort authors by post count in descending order
-        pipeline.add(new Document("$sort", new Document("postCount", -1)));
+        pipeline.add(new Document("$sort", new Document(Constants.TOP_AUTHORS_COLUMN, -1)));
+
+        // Skip the specified number of documents for pagination
+        pipeline.add(new Document("$skip", offset));
 
         // limit results to top N authors
         pipeline.add(new Document("$limit", limit));
@@ -86,6 +96,8 @@ public class MongoService {
 
 
     private Document mapPostsToDocument(RedditPost post) {
+        // we can also use .append() and put it all in 1 line
+
         Document document = new Document();
         document.put("title", post.getTitle());
         document.put("selftext", post.getSelftext());
