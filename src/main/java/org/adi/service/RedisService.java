@@ -5,6 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import org.adi.models.RedditPost;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 import redis.clients.jedis.Jedis;
 import redis.clients.jedis.JedisPool;
 
@@ -14,12 +15,14 @@ import java.util.List;
 @ApplicationScoped
 public class RedisService {
 
-    private final JedisPool jedisPool;
-    private final ObjectMapper objectMapper;
+    private JedisPool jedisPool;
+    private ObjectMapper objectMapper;
 
     @Inject
-    public RedisService(ObjectMapper objectMapper) {
-        this.jedisPool = new JedisPool("localhost", 6379);
+    public RedisService(ObjectMapper objectMapper,
+                        @ConfigProperty(name = "redis.host", defaultValue = "localhost") String redisHost,
+                        @ConfigProperty(name = "redis.port", defaultValue = "6379") int redisPort) {
+        this.jedisPool = new JedisPool(redisHost, redisPort);
         this.objectMapper = objectMapper;
     }
 
@@ -29,7 +32,6 @@ public class RedisService {
             if (json == null) {
                 return null;
             }
-
             return Arrays.asList(objectMapper.readValue(json, RedditPost[].class));
         } catch (Exception e) {
             e.printStackTrace();

@@ -5,6 +5,7 @@ import org.adi.config.Constants;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
 import org.apache.kafka.common.serialization.StringSerializer;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import java.util.Properties;
 
@@ -13,9 +14,11 @@ public class KafkaProducerService {
     private KafkaProducer<String, String> producer;
 
     // constructor to initialize the KafkaProducer
-    public KafkaProducerService(){
+    public KafkaProducerService(
+            @ConfigProperty(name = "kafka.bootstrap.servers") String kafkaBootstrapServers
+    ){
         Properties properties = new Properties();
-        properties.put("bootstrap.servers", Constants.KAFKA_BOOTSTRAP_SERVERS);      // specifies kafka broker's network location
+        properties.put("bootstrap.servers", kafkaBootstrapServers);      // specifies kafka broker's network location
         properties.put("key.serializer", StringSerializer.class.getName());     // specifies how key and value should be serialized while converting to Bytes
         properties.put("value.serializer", StringSerializer.class.getName());
         properties.put("acks", "all");    // highest level of message durability and safety, introduces slight latency but ensures integrity (trade-off)
