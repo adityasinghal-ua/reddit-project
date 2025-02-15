@@ -1,8 +1,10 @@
 package org.adi.service;
 
+import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.context.ApplicationScoped;
 import org.adi.config.Constants;
 import org.adi.models.RedditPost;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.opensearch.client.RestClient;
 import org.opensearch.client.json.jackson.JacksonJsonpMapper;
 import org.opensearch.client.opensearch.OpenSearchClient;
@@ -15,10 +17,17 @@ import java.util.stream.Collectors;
 
 @ApplicationScoped
 public class OpenSearchService {
-    private final OpenSearchClient openSearchClient;
+    private OpenSearchClient openSearchClient;
 
-    public OpenSearchService(){
-        RestClient restClient = RestClient.builder(new org.apache.http.HttpHost("localhost", Constants.OPENSEARCH_PORT)).build();
+    @ConfigProperty(name = "opensearch.host")
+    String openSearchHost;
+
+    @ConfigProperty(name = "opensearch.port")
+    Integer openSearchPort;
+
+    @PostConstruct
+    public void init() {
+        RestClient restClient = RestClient.builder(new org.apache.http.HttpHost(openSearchHost, openSearchPort)).build();
         this.openSearchClient = new OpenSearchClient(new RestClientTransport(restClient, new JacksonJsonpMapper()));
     }
 
