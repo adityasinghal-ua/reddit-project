@@ -1,5 +1,3 @@
-version: "3.8"
-
 services:
   zookeeper:
     image: confluentinc/cp-zookeeper:latest
@@ -66,6 +64,19 @@ services:
     networks:
       - app-network
 
+
+  jaeger:
+    image: jaegertracing/all-in-one:latest
+    container_name: jaeger
+    ports:
+      - "16686:16686"   # Jaeger UI
+      - "4317:4317"   # gRPC collector endpoint
+      - "14268:14268"   # HTTP collector endpoint (optional)
+    environment:
+      - COLLECTOR_OTLP_ENABLED=true
+    networks:
+      - app-network
+
   app:
     build: .
     container_name: quarkus-app
@@ -74,6 +85,7 @@ services:
       - redis
       - opensearch
       - mongo
+      - jaeger
     environment:
       - KAFKA_BOOTSTRAP_SERVERS=kafka:9092
       - QUARKUS_MONGODB_CONNECTION_STRING=mongodb://root:root@mongo:27017/reddit_db?authSource=admin

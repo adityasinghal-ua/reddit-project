@@ -1,5 +1,6 @@
 package org.adi.service;
 
+import io.opentelemetry.instrumentation.annotations.WithSpan;
 import jakarta.annotation.PostConstruct;
 import jakarta.enterprise.context.ApplicationScoped;
 import org.adi.config.Constants;
@@ -31,6 +32,7 @@ public class OpenSearchService {
         this.openSearchClient = new OpenSearchClient(new RestClientTransport(restClient, new JacksonJsonpMapper()));
     }
 
+    @WithSpan
     public void indexPost(RedditPost post){
         try{
             IndexRequest<RedditPost> indexRequest = new IndexRequest.Builder<RedditPost>()
@@ -45,6 +47,7 @@ public class OpenSearchService {
         }
     }
 
+    @WithSpan
     public List<RedditPost> searchPosts(String query, Integer limit, Integer offset){
         try{
             // build the search request that is to be passed to the openSearchClient to search

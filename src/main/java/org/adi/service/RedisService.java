@@ -2,6 +2,7 @@ package org.adi.service;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.opentelemetry.instrumentation.annotations.WithSpan;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import org.adi.models.RedditPost;
@@ -26,6 +27,7 @@ public class RedisService {
         this.objectMapper = objectMapper;
     }
 
+    @WithSpan
     public List<RedditPost> getPostsFromCache(String key) {
         try (Jedis jedis = jedisPool.getResource()) {
             String json = jedis.get(key);
@@ -39,6 +41,7 @@ public class RedisService {
         }
     }
 
+    @WithSpan
     public void setPostsToCache(String key, List<RedditPost> posts, int ttlSeconds) {
         try (Jedis jedis = jedisPool.getResource()) {
             String json = objectMapper.writeValueAsString(posts);
