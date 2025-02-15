@@ -6,13 +6,12 @@ import com.mongodb.client.MongoClient;
 import com.mongodb.client.MongoCollection;
 import com.mongodb.client.MongoDatabase;
 import com.mongodb.client.model.Filters;
+import io.opentelemetry.instrumentation.annotations.WithSpan;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import org.adi.config.Constants;
 import org.adi.models.RedditPost;
-import org.apache.kafka.clients.consumer.ConsumerRecord;
 import org.bson.Document;
-import org.eclipse.microprofile.reactive.messaging.Incoming;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -29,6 +28,7 @@ public class MongoService {
         this.mongoClient = mongoClient;
     }
 
+    @WithSpan
     public List<RedditPost> getPostsFromDatabase(String username, int limit, int offset){
         MongoDatabase database = mongoClient.getDatabase(DATABASE_NAME);
         MongoCollection<Document> collection = database.getCollection(COLLECTION_NAME);
@@ -44,6 +44,7 @@ public class MongoService {
         return posts;
     }
 
+    @WithSpan
     public Boolean savePostsToDatabase(RedditPost post){
         MongoDatabase database = mongoClient.getDatabase(DATABASE_NAME);
         MongoCollection<Document> collection = database.getCollection(COLLECTION_NAME);
@@ -64,6 +65,7 @@ public class MongoService {
     // TODO: offset and limit for pagination (to ensure we don't fetch all posts at once in high load situations)
     // teams get knowledge entity
 
+    @WithSpan
     public List<Document> getTopAuthors(int offset, int limit){
         MongoDatabase database = mongoClient.getDatabase(DATABASE_NAME);
         MongoCollection<Document> collection = database.getCollection(COLLECTION_NAME);

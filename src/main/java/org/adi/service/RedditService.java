@@ -2,6 +2,7 @@ package org.adi.service;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.opentelemetry.instrumentation.annotations.WithSpan;
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.inject.Inject;
 import jakarta.ws.rs.NotFoundException;
@@ -45,6 +46,7 @@ public class RedditService {
 //       2) If missing, check DB
 //       3) If still missing, fetch from Reddit, store in DB (via Kafka), and store in Redis
 
+    @WithSpan
     public CompletableFuture<List<RedditPost>> getUserPosts(
             String username,
             String clientId,
@@ -95,7 +97,8 @@ public class RedditService {
     }
 
 
-    private CompletableFuture<String> getAccessToken(String clientId, String clientSecret) {
+    @WithSpan
+    public CompletableFuture<String> getAccessToken(String clientId, String clientSecret) {
         return CompletableFuture.supplyAsync(() -> {
             try {
                 String basicAuth = "Basic " + Base64.getEncoder()
@@ -109,8 +112,8 @@ public class RedditService {
         });
     }
 
-
-    private CompletableFuture<List<RedditPost>> fetchPostsFromReddit(String username, String accessToken, Integer limit, Integer offset) {
+    @WithSpan
+    public CompletableFuture<List<RedditPost>> fetchPostsFromReddit(String username, String accessToken, Integer limit, Integer offset) {
         return CompletableFuture.supplyAsync(() -> {
             List<RedditPost> fetchedPosts = new ArrayList<>();
             String after = null;
